@@ -102,12 +102,13 @@ function uptime() {
 						html: "<td id='online_status'><div class='layui-badge'>加载中</div></td>" +
 							"<td id='month_traffic'><div class='layui-badge'>加载中</div></td>" +
 							"<td id='name'>加载中</td>" +
-							"<td id='type'>加载中</td>" +
+							// "<td id='type'>加载中</td>" +
 							"<td id='location'>加载中</td>" +
 							"<td id='uptime'>加载中</td>" +
 							"<td id='load'>加载中</td>" +
 							"<td id='network'>加载中</td>" +
 							"<td id='traffic'>加载中</td>" +
+							"<td id='tcp_udp'>加载中</td>" +
 							"<td id='cpu'><div class='layui-progress layui-progress-big' lay-showpercent='true'><div style='width: 100%;' class='layui-progress-bar layui-bg-orange'><small>加载中</small></div></div></td>" +
 							"<td id='memory'><div class='layui-progress layui-progress-big' lay-showpercent='true'><div style='width: 100%;' class='layui-progress-bar layui-bg-orange'><small>加载中</small></div></div></td>" +
 							"<td id='hdd'><div class='layui-progress layui-progress-big' lay-showpercent='true'><div style='width: 100%;' class='layui-progress-bar layui-bg-orange'><small>加载中</small></div></div></td>" +
@@ -141,7 +142,7 @@ function uptime() {
 				$(TableRow).find("#online_status .layui-badge").alterClass("layui-bg-*").addClass("layui-bg-green").text("IPv4");
 			} else if (result.servers[i].online4 && result.servers[i].online6) {
 				online += 1;
-				$(TableRow).find("#online_status .layui-badge").alterClass("layui-bg-*").addClass("layui-bg-green").text("双栈");
+				$(TableRow).find("#online_status .layui-badge").alterClass("layui-bg-*").addClass("layui-bg-green").text("双 栈");
 			} else if (!result.servers[i].online4 && result.servers[i].online6) {
 				online += 1;
 				$(TableRow).find("#online_status .layui-badge").alterClass("layui-bg-*").addClass("layui-bg-green").text("IPv6");
@@ -154,7 +155,8 @@ function uptime() {
 			$(TableRow).find("#name").text(result.servers[i].name);
 
 			// Type
-			$(TableRow).find("#type").text(result.servers[i].type);
+			// $(TableRow).find("#type").text(result.servers[i].type);
+			
 
 			// Location
 			$(TableRow).find("#location").text(result.servers[i].location);
@@ -164,6 +166,7 @@ function uptime() {
 					$(TableRow).find("#load").text("–");
 					$(TableRow).find("#network").text("–");
 					$(TableRow).find("#traffic").text("–");
+					$(TableRow).find("#tcp_udp").text('-1|-1');
 					$(TableRow).find("#month_traffic .layui-badge").alterClass("layui-bg-*").addClass("layui-bg-orange").text("关闭");
 					$(TableRow).find("#cpu .layui-progress-bar").alterClass("layui-bg-*").addClass("layui-bg-red").css("width", "100%").html('<span class="layui-progress-text">关闭</span>');
 					$(TableRow).find("#memory .layui-progress-bar").alterClass("layui-bg-*").addClass("layui-bg-red").css("width", "100%").html('<span class="layui-progress-text">关闭</span>');
@@ -179,6 +182,17 @@ function uptime() {
 					server_status[i] = true;
 				}
 
+				let tcpUdp = result.servers[i].tcp_count + result.servers[i].udp_count;
+				$(TableRow).find("#tcp_udp").html("<div><small>" + tcpUdp + "</small></div>");
+				if(tcpUdp > 500) {
+					$(TableRow).find("#tcp_udp > div").addClass("layui-badge").addClass("layui-bg-red");
+				}
+				else if(tcpUdp > 300) {
+					$(TableRow).find("#tcp_udp > div").addClass("layui-bg-orange");
+				} else if(tcpUdp > 100) {
+					$(TableRow).find("#tcp_udp > div").addClass("layui-badge").addClass("layui-bg-blue");
+				}
+
 				// month traffic
 				var monthtraffic = "";
 				var trafficdiff_in = result.servers[i].network_in - result.servers[i].last_network_in;
@@ -187,11 +201,15 @@ function uptime() {
 					monthtraffic += (trafficdiff_in / 1024 / 1024 / 1024).toFixed(1) + "G";
 				else
 					monthtraffic += (trafficdiff_in / 1024 / 1024 / 1024 / 1024).toFixed(1) + "T";
+				monthtraffic = monthtraffic.padEnd(6, '¿');
 				monthtraffic += " | "
+				let monthtrafficTmp = "";
 				if (trafficdiff_out < 1024 * 1024 * 1024 * 1024)
-					monthtraffic += (trafficdiff_out / 1024 / 1024 / 1024).toFixed(1) + "G";
+					monthtrafficTmp += (trafficdiff_out / 1024 / 1024 / 1024).toFixed(1) + "G";
 				else
-					monthtraffic += (trafficdiff_out / 1024 / 1024 / 1024 / 1024).toFixed(1) + "T";
+					monthtrafficTmp += (trafficdiff_out / 1024 / 1024 / 1024 / 1024).toFixed(1) + "T";
+				monthtraffic += monthtrafficTmp.padStart(6, '¿');
+				monthtraffic = monthtraffic.replaceAll("¿", "&nbsp;");
 				$(TableRow).find("#month_traffic .layui-badge").alterClass("layui-bg-*").addClass("layui-bg-green").html("<small>" + monthtraffic + "</small>");
 
 				// Uptime
@@ -210,12 +228,28 @@ function uptime() {
 					netstr += (result.servers[i].network_rx / 1024).toFixed(1) + "K";
 				else
 					netstr += (result.servers[i].network_rx / 1024 / 1024).toFixed(1) + "M";
+				netstr = netstr.padEnd(6, '¿');
 				netstr += " | "
+				let netstrTmp = "";
 				if (result.servers[i].network_tx < 1024 * 1024)
-					netstr += (result.servers[i].network_tx / 1024).toFixed(1) + "K";
+					netstrTmp += (result.servers[i].network_tx / 1024).toFixed(1) + "K";
 				else
-					netstr += (result.servers[i].network_tx / 1024 / 1024).toFixed(1) + "M";
-				$(TableRow).find("#network").text(netstr);
+					netstrTmp += (result.servers[i].network_tx / 1024 / 1024).toFixed(1) + "M";
+				netstr += netstrTmp.padStart(6, '¿');
+				netstr = netstr.replaceAll("¿", "&nbsp;");
+				$(TableRow).find("#network").html("<div><small>" + netstr + "</small></div>");
+				
+				if(result.servers[i].network_rx / 1024 > 1000 || result.servers[i].network_tx / 1024 > 1000) {
+					// $(TableRow).find("#network > div").addClass("layui-badge");
+					$(TableRow).find("#network > div").addClass("layui-badge").addClass("layui-bg-red");
+				}
+				else if(result.servers[i].network_rx / 1024 > 500 || result.servers[i].network_tx / 1024 > 500) {
+					// $(TableRow).find("#network > div").addClass("layui-badge").addClass("layui-badge");
+					$(TableRow).find("#network > div").addClass("layui-bg-orange");
+				} else if(result.servers[i].network_rx / 1024 > 200 || result.servers[i].network_tx / 1024 > 200) {
+					// $(TableRow).find("#network > div").addClass("layui-badge").addClass("layui-badge");
+					$(TableRow).find("#network > div").addClass("layui-badge").addClass("layui-bg-blue");
+				}
 
 				//Traffic
 				var trafficstr = "";
@@ -223,12 +257,16 @@ function uptime() {
 					trafficstr += (result.servers[i].network_in / 1024 / 1024 / 1024).toFixed(1) + "G";
 				else
 					trafficstr += (result.servers[i].network_in / 1024 / 1024 / 1024 / 1024).toFixed(1) + "T";
+				trafficstr = trafficstr.padEnd(6, '¿');
 				trafficstr += " | "
+				let trafficstrTmp = "";
 				if (result.servers[i].network_out < 1024 * 1024 * 1024 * 1024)
-					trafficstr += (result.servers[i].network_out / 1024 / 1024 / 1024).toFixed(1) + "G";
+					trafficstrTmp += (result.servers[i].network_out / 1024 / 1024 / 1024).toFixed(1) + "G";
 				else
-					trafficstr += (result.servers[i].network_out / 1024 / 1024 / 1024 / 1024).toFixed(1) + "T";
-				$(TableRow).find("#traffic").text(trafficstr);
+					trafficstrTmp += (result.servers[i].network_out / 1024 / 1024 / 1024 / 1024).toFixed(1) + "T";
+				trafficstr += trafficstrTmp.padStart(6, '¿');
+				trafficstr = trafficstr.replaceAll("¿", "&nbsp;");
+				$(TableRow).find("#traffic").html("<small>" + trafficstr + "</small>");
 
 				// CPU
 				if (result.servers[i].cpu >= 90)
@@ -293,7 +331,7 @@ function uptime() {
 					$(TableRow).find("#ping .layui-badge").alterClass("layui-bg-*").addClass("layui-bg-orange");
 				else
 					$(TableRow).find("#ping .layui-badge").alterClass("layui-bg-*").addClass("layui-bg-green");
-				$(TableRow).find("#ping .layui-badge").html(PING_10010 + "%💻" + PING_189 + "%💻" + PING_10086 + "%");
+				$(TableRow).find("#ping .layui-badge").html(PING_10010 + "% | " + PING_189 + "% | " + PING_10086 + "%");
 
 				// Custom
 				if (result.servers[i].custom) {
